@@ -12,11 +12,12 @@
 #define DEFAULT_BACKLOG 100
 
 static ushort port = DEFAULT_PORT;
-module_param(port, ushort, S_IRUGO);
+module_param(port, ushort, S_IRUGO);  // 這邊可以幫助設定
 static ushort backlog = DEFAULT_BACKLOG;
 module_param(backlog, ushort, S_IRUGO);
 
 static struct socket *listen_socket;
+// module_param(listen_socket, socket, S_IRUGO);
 static struct http_server_param param;
 static struct task_struct *http_server;
 
