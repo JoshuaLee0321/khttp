@@ -21,6 +21,7 @@ static struct socket *listen_socket;
 static struct http_server_param param;
 static struct task_struct *http_server;
 
+struct workqueue_struct *khttp_wq;  // workQueue added
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 static int set_sock_opt(struct socket *sock,
                         int level,
@@ -81,6 +82,8 @@ static int kernel_setsockopt(struct socket *sock,
     return -EINVAL;
 }
 #endif
+
+
 
 static inline int setsockopt(struct socket *sock,
                              int level,
@@ -161,6 +164,7 @@ static int __init khttpd_init(void)
         return err;
     }
     param.listen_socket = listen_socket;
+    khttp_wq = alloc_workqueue(MODULE_NAME, WQ_UNBOUND, 0);
     http_server = kthread_run(http_server_daemon, &param, KBUILD_MODNAME);
     if (IS_ERR(http_server)) {
         pr_err("can't start http server daemon\n");
@@ -175,7 +179,8 @@ static void __exit khttpd_exit(void)
     send_sig(SIGTERM, http_server, 1);
     kthread_stop(http_server);
     close_listen_socket(listen_socket);
-    pr_info("module unloaded\n");
+    destroy_workqueue(khttp_wq);
+    printk("module unloaded\n");
 }
 
 module_init(khttpd_init);
