@@ -4,7 +4,7 @@
 #include <linux/module.h>
 #include <linux/workqueue.h>
 #include <net/sock.h>
-
+#include "http_parser.h"
 #define MODULE_NAME "khttp"
 
 struct http_server_param {
@@ -13,14 +13,20 @@ struct http_server_param {
 
 struct khttp_service {
     bool is_stopped;
-    struct list_head worker;
+    struct list_head head;
 };
 
-struct khttp {
-    struct socket *sock;
-    struct list_head list;
+struct http_request {
+    struct socket *socket;
+    enum http_method method;
+    char request_url[128];
+    int complete;
+    struct list_head node;
     struct work_struct khttp_work;
 };
+
+extern struct khttp_service daemon;
+
 extern int http_server_daemon(void *arg);
 
 #endif

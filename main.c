@@ -22,6 +22,7 @@ static struct http_server_param param;
 static struct task_struct *http_server;
 
 struct workqueue_struct *khttp_wq;  // workQueue added
+struct khttp_service daemon = {.is_stopped = false};
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 static int set_sock_opt(struct socket *sock,
                         int level,
@@ -155,7 +156,6 @@ static void close_listen_socket(struct socket *socket)
     kernel_sock_shutdown(socket, SHUT_RDWR);
     sock_release(socket);
 }
-
 static int __init khttpd_init(void)
 {
     int err = open_listen_socket(port, backlog, &listen_socket);
@@ -164,7 +164,7 @@ static int __init khttpd_init(void)
         return err;
     }
     param.listen_socket = listen_socket;
-    khttp_wq = alloc_workqueue(MODULE_NAME, WQ_UNBOUND, 0);
+    khttp_wq = alloc_workqueue(MODULE_NAME, 0, 0);
     http_server = kthread_run(http_server_daemon, &param, KBUILD_MODNAME);
     if (IS_ERR(http_server)) {
         pr_err("can't start http server daemon\n");
