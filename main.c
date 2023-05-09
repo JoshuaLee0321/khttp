@@ -12,17 +12,16 @@
 #define DEFAULT_BACKLOG 100
 
 static ushort port = DEFAULT_PORT;
-module_param(port, ushort, S_IRUGO);  // 這邊可以幫助設定
+module_param(port, ushort, S_IRUGO);
 static ushort backlog = DEFAULT_BACKLOG;
 module_param(backlog, ushort, S_IRUGO);
 
 static struct socket *listen_socket;
-// module_param(listen_socket, socket, S_IRUGO);
 static struct http_server_param param;
 static struct task_struct *http_server;
 
-struct workqueue_struct *khttp_wq;  // workQueue added
-struct khttp_service daemon = {.is_stopped = false};
+struct workqueue_struct *khttp_wq;
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 static int set_sock_opt(struct socket *sock,
                         int level,
@@ -83,8 +82,6 @@ static int kernel_setsockopt(struct socket *sock,
     return -EINVAL;
 }
 #endif
-
-
 
 static inline int setsockopt(struct socket *sock,
                              int level,
@@ -156,6 +153,7 @@ static void close_listen_socket(struct socket *socket)
     kernel_sock_shutdown(socket, SHUT_RDWR);
     sock_release(socket);
 }
+
 static int __init khttpd_init(void)
 {
     int err = open_listen_socket(port, backlog, &listen_socket);
@@ -164,8 +162,10 @@ static int __init khttpd_init(void)
         return err;
     }
     param.listen_socket = listen_socket;
-    khttp_wq = alloc_workqueue(MODULE_NAME, 0, 0);
+
+    khttp_wq = alloc_workqueue(MODULE_NAME, 0, 0); /* workqueue allocated */
     http_server = kthread_run(http_server_daemon, &param, KBUILD_MODNAME);
+
     if (IS_ERR(http_server)) {
         pr_err("can't start http server daemon\n");
         close_listen_socket(listen_socket);
@@ -179,8 +179,7 @@ static void __exit khttpd_exit(void)
     send_sig(SIGTERM, http_server, 1);
     kthread_stop(http_server);
     close_listen_socket(listen_socket);
-    destroy_workqueue(khttp_wq);
-    printk("module unloaded\n");
+    pr_info("module unloaded\n");
 }
 
 module_init(khttpd_init);
